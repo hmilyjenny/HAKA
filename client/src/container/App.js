@@ -1,5 +1,8 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
+improt Nav from './Nav';
+import '../../static/css/main.css';
+
 
 class App extends Component {
   render() {
@@ -24,3 +27,5 @@ function select(state) {
     data: state
   };
 }
+// Wrap the component to inject dispatch and state into it
+export default connect(select)(App);

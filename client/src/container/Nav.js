@@ -8,8 +8,8 @@
 
 import React, { Component } from 'react';
 import { Link } from 'react-router';
-import { logout } from '../../actions/AppActions';
-import LoadingButton from './LoadingButton';
+import LoadingButton from '../components/base/LoadingButton';
+//import { logout } from '../../actions/AppActions';
 
 class Nav extends Component {
   render() {
@@ -42,7 +42,7 @@ class Nav extends Component {
   }
 
   _logout() {
-    this.props.dispatch(logout());
+    //this.props.dispatch(logout());
   }
 }
 

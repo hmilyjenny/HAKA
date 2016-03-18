@@ -4,7 +4,7 @@
   "description": "online ppt",
   "main": "index.js",
   "scripts": {
-    "webserver": "nodemon server/server.js",
+    "webserver": "nodemon server/src/server.js",
     "dev": "node_modules/.bin/webpack-dev-server"
   },
   "repository": {
@@ -26,10 +26,12 @@
   "dependencies": {
     "babel-core": "^6.7.2",
     "babel-loader": "^6.2.4",
+    "body-parser": "^1.15.0",
     "css-loader": "^0.23.1",
     "express": "^4.13.4",
     "file-loader": "^0.8.5",
     "isomorphic-fetch": "^2.2.1",
+    "mongoose": "^4.4.7",
     "node-sass": "^3.4.2",
     "react": "^0.14.7",
     "react-dom": "^0.14.7",
@@ -56,6 +58,8 @@
     "postcss-simple-vars": "^1.2.0",
     "react-hot-loader": "^1.3.0",
     "redux-devtools": "^3.1.1",
-    "webpack-dev-server": "^1.14.1"
+    "webpack-dev-middleware": "^1.5.1",
+    "webpack-dev-server": "^1.14.1",
+    "webpack-hot-middleware": "^2.10.0"
   }
 }

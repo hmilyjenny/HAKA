@@ -3,10 +3,8 @@ var path = require('path');
 
 module.exports = {
   devtool:'source-map',
-  entry :[
-    "webpack-dev-server/client?http://localhost:3000",
-    "webpack/hot/only-dev-server",
-    path.resolve(__dirname, 'client/src/index.js')
+  entry: ['webpack-hot-middleware/client',
+          path.resolve(__dirname, 'client/src/index.js'),
   ],
   output:{
     path:path.resolve(__dirname, 'build'),
@@ -37,7 +35,12 @@ module.exports = {
     ]
   },
   plugins:[
-    new webpack.HotModuleReplacementPlugin()
+    new webpack.HotModuleReplacementPlugin(),
+    new webpack.DefinePlugin({
+      'process.env': {
+        CLIENT: JSON.stringify(true)
+      }
+    })
   ],
   target : "web",
   stats : false,
