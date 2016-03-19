@@ -9,7 +9,7 @@ module.exports = {
   ],
   output:{
     path:path.resolve(__dirname, 'build'),
-    filename:"bundle.js"
+    filename:"dist/bundle.js"
   },
   module:{
     loaders:[
@@ -31,15 +31,19 @@ module.exports = {
   resolve: {
     extensions: ['', '.js', '.jsx','.css']
   },
+  devServer: {
+    contentBase: path.join(__dirname, 'dist'),
+    historyApiFallback: true,
+    hot: true,
+    inline: true,
+    progress: true
+  },
   plugins:[
     new webpack.HotModuleReplacementPlugin(),
     new webpack.DefinePlugin({
       'process.env': {
         CLIENT: JSON.stringify(true)
       }
-    }),
-    new HtmlwebpackPlugin({
-      title: 'HAKA'
     })
   ],
   target : "web",

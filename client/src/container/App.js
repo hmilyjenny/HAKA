@@ -17,8 +17,6 @@ class App extends Component {
   }
 }
 
-export default App;
-
 // REDUX STUFF
 
 // Which props do we want to inject, given the global state?

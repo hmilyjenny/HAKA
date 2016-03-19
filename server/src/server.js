@@ -14,7 +14,7 @@ const app = new Express();
 
 if (process.env.NODE_ENV !== 'production') {
   const compiler = webpack(config);
-  app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: config.output.publicPath,hot: true,historyApiFallback: true,inline: false}));
+  //app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: config.output.publicPath,hot: true,historyApiFallback: true,inline: false}));
   app.use(webpackHotMiddleware(compiler));
 }
 
