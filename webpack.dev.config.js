@@ -1,27 +1,21 @@
 var webpack = require('webpack');
 var path = require('path');
+var HtmlwebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   devtool:'source-map',
   entry: ['webpack-hot-middleware/client',
-          path.resolve(__dirname, 'client/src/index.js'),
+          path.resolve(__dirname, 'client/src/index'),
   ],
   output:{
     path:path.resolve(__dirname, 'build'),
-    filename:"js/bundle.js"
+    filename:"bundle.js"
   },
   module:{
-    preLoaders: [
-      {
-        test: /\.jsx?$/,
-        loaders: process.env.NODE_ENV === 'production' ? [] : ['eslint'],
-        include: path.resolve(ROOT_PATH, 'client')
-      }
-    ],
     loaders:[
       {
-        test: /\.js$/, // Transform all .js files required somewhere within an entry point...
-         loader: 'babel', // ...with the specified loaders...
+        test: /\.jsx?$/,
+        loaders: ['react-hot', 'babel'],
          exclude: path.join(__dirname, '/node_modules/')
       },
       {
@@ -34,12 +28,18 @@ module.exports = {
       }
     ]
   },
+  resolve: {
+    extensions: ['', '.js', '.jsx','.css']
+  },
   plugins:[
     new webpack.HotModuleReplacementPlugin(),
     new webpack.DefinePlugin({
       'process.env': {
         CLIENT: JSON.stringify(true)
       }
+    }),
+    new HtmlwebpackPlugin({
+      title: 'HAKA'
     })
   ],
   target : "web",
@@ -48,7 +48,7 @@ module.exports = {
   postcss: function(){
     return[
       require('postcss-import')({
-         addDependencyTo: webpack
+        addDependencyTo: webpack
         }
       ),
       require('postcss-simple-vars')(),

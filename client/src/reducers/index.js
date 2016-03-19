@@ -1,6 +1,6 @@
 import { combineReducers } from 'redux';
-import versionReducer from './version';
-import homeReducer from './home';
+import versionReducer from './versionReducer';
+import homeReducer from './homeReducer';
 
 const rootReducer = combineReducers({
   homeReducer,

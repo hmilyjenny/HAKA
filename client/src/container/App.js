@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-improt Nav from './Nav';
-import '../../static/css/main.css';
+import Nav from './Nav';
+import '../../../static/css/main.css';
 
 
 class App extends Component {

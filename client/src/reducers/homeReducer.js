@@ -1,4 +1,4 @@
-const assign = Object.assign || require('object.assign');
+//const assign = Object.assign || require('object.assign');
 
 const initialState = {
   formState: {

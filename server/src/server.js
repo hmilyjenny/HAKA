@@ -14,37 +14,34 @@ const app = new Express();
 
 if (process.env.NODE_ENV !== 'production') {
   const compiler = webpack(config);
-  app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: config.output.publicPath }));
+  app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: config.output.publicPath,hot: true,historyApiFallback: true,inline: false}));
   app.use(webpackHotMiddleware(compiler));
 }
 
-import dbConfig from './config/config';
+import serverConfig from './config/ServerConfig';
 
 // MongoDB Connection
-mongoose.connect(serverConfig.db, (error) => {
-  if (error) {
-    console.error('Please make sure Mongodb is installed and running!'); // eslint-disable-line no-console
-    throw error;
-  }
-});
+// mongoose.connect(serverConfig.db, (error) => {
+//   if (error) {
+//     console.error('Please make sure Mongodb is installed and running!'); // eslint-disable-line no-console
+//     throw error;
+//   }
+// });
 
-const httpServer = http.createServer(app);
-const port = config.get('express.port') || 3000;
-
-app.use(require('serve-static')(path.join(__dirname, config.get('buildDirectory'))));
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
+app.use(Express.static(path.resolve(__dirname, '../../static')));
+app.use(bodyParser.urlencoded({ limit: '20mb', extended: false }));
 app.use(bodyParser.json());
 
 /**
  * API Endpoints
  */
-app.get('/api/0/events', api.getEvents);
-app.post('/api/0/events', api.addEvent);
-app.post('/api/0/events/:id', api.editEvent);
-app.delete('/api/0/events/:id', api.deleteEvent);
+//app.use('/api', auth);
 
-app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'images', 'favicon.ico')));
+app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, '../../static/img', 'favicon.ico')));
 
-httpServer.listen(port);
+// start app
+app.listen(serverConfig.port, (error) => {
+  if (!error) {
+    console.log(`Haka is running on port: ${serverConfig.port}! Build something amazing!`); // eslint-disable-line
+  }
+});
