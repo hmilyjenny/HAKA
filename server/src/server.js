@@ -12,13 +12,14 @@ import webpackHotMiddleware from 'webpack-hot-middleware';
 //初始化Express
 const app = new Express();
 
-if (process.env.NODE_ENV !== 'production') {
-  const compiler = webpack(config);
-  //app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: config.output.publicPath,hot: true,historyApiFallback: true,inline: false}));
-  app.use(webpackHotMiddleware(compiler));
-}
+// if (process.env.NODE_ENV !== 'production') {
+//   const compiler = webpack(config);
+//   app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: config.output.publicPath,hot: true,historyApiFallback: true,inline: false}));
+//   app.use(webpackHotMiddleware(compiler));
+// }
 
 import serverConfig from './config/ServerConfig';
+console.log("test");
 
 // MongoDB Connection
 // mongoose.connect(serverConfig.db, (error) => {

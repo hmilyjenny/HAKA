@@ -4,7 +4,7 @@ import App from './container/App';
 import HomePage from './container/HomePage/HomePage';
 
 export default(
-  <Route component={App}>
+  <Route path="/" component={App}>
     <Route path="/" component={HomePage} />
   </Route>
 );

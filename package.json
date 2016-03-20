@@ -4,7 +4,8 @@
   "description": "online ppt",
   "main": "index.js",
   "scripts": {
-    "start": "cross-env NODE_ENV=development node index.js",
+    "start": "nodemon ./index.js",
+    "build": "node_modules/.bin/webpack",
     "dev": "node_modules/.bin/webpack-dev-server"
   },
   "repository": {
