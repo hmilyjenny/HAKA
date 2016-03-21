@@ -1,4 +1,5 @@
 //const assign = Object.assign || require('object.assign');
+import auth from '../utils/auth';
 
 const initialState = {
   formState: {
@@ -6,7 +7,7 @@ const initialState = {
     password: ''
   },
   currentlySending: false,
-  loggedIn: false
+  loggedIn: auth.loggedIn
 };
 
 export default function homeReducer(state = initialState, action) {
