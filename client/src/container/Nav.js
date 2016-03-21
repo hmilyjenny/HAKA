@@ -12,6 +12,9 @@ import LoadingButton from '../components/base/LoadingButton';
 //import { logout } from '../../actions/AppActions';
 
 class Nav extends Component {
+  constructor(props, context) {
+      super(props, context);
+    }
   render() {
     // Render either the Log In and register buttons, or the logout button
     // based on the current authentication state.

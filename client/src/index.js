@@ -4,11 +4,15 @@ import { Provider } from 'react-redux';
 import { Router,browserHistory } from 'react-router';
 import routes from './routes';
 import configureStore from './stores/configureStore';
+import DevTools from './container/DevTools/DevTools';
 
 const store = configureStore();
 
 render(
   <Provider store={store}>
-    <Router history={browserHistory} routes={routes} />
+    <div>
+      <Router history={browserHistory} routes={routes} />
+      <DevTools/>
+    </div>
   </Provider>, document.getElementById('app')
 );

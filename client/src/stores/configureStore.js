@@ -1,15 +1,18 @@
-import { createStore, applyMiddleware } from 'redux';
-//import { persistState } from 'redux-devtools';
+import { createStore, applyMiddleware,compose } from 'redux';
 import thunkMiddleware from 'redux-thunk';
 import rootReducer from '../reducers';
 import DevTools from '../container/DevTools/DevTools';
 
-export default function configureStore() {
+export default function configureStore(initialState = {}) {
 
-  const storeWithMiddleware = applyMiddleware (
-  	thunkMiddleware
-  )(createStore);
-  const store = storeWithMiddleware(rootReducer);
+  let finalCreateStore;
+
+   finalCreateStore = compose(
+      applyMiddleware(thunkMiddleware),
+      DevTools.instrument()
+    )(createStore);
+
+  const store = finalCreateStore(rootReducer, initialState);
 
   if (module.hot) {
     // Enable Webpack hot module replacement for reducers
