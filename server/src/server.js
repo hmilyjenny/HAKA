@@ -18,16 +18,18 @@ const app = new Express();
 //   app.use(webpackHotMiddleware(compiler));
 // }
 
-import serverConfig from './config/ServerConfig';
-console.log("test");
+import initData from './initdata';
+import {config as serverConfig,auth as authConfig} from './config/ServerConfig';
 
 // MongoDB Connection
-// mongoose.connect(serverConfig.db, (error) => {
-//   if (error) {
-//     console.error('Please make sure Mongodb is installed and running!'); // eslint-disable-line no-console
-//     throw error;
-//   }
-// });
+mongoose.connect(serverConfig.mongoURL, (error) => {
+    if (error) {
+        console.error('请确保Mongodb已安装并已运行!');
+        throw error;
+    }
+    //todo something
+    initData();
+});
 
 app.use(Express.static(path.resolve(__dirname, '../../static')));
 app.use(bodyParser.urlencoded({ limit: '20mb', extended: false }));
@@ -36,7 +38,18 @@ app.use(bodyParser.json());
 /**
  * API Endpoints
  */
-//app.use('/api', auth);
+ import userRoutes from './routes/user.route';
+app.use(userRoutes);
+
+/*
+* Passport function
+*/
+import passport from 'passport';
+import passportUserRoutes from './routes/user.passport.route';
+
+app.use(passport.initialize());
+app.use(passportUserRoutes);
+
 
 app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, '../../static/img', 'favicon.ico')));
 
