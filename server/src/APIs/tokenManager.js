@@ -11,6 +11,9 @@ export function decodeToken(token, cb) {
         userInfo = jwt.decode(token, {
             complete: true
         });
+        if(!userInfo){
+            throw new Error('');
+        }
     } catch (e) {
         return cb(new Error('Token无效'));
     }
