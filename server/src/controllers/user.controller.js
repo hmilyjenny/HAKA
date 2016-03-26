@@ -47,7 +47,7 @@ export function userSignIn(req, res) {
       username: data.userName,
       userid: data.cuid
     }, serverConfig.secretKEY, {
-      expiresIn: serverConfig.expireAfterMinutes
+      expiresIn: serverConfig.expireInTime
     });
     tokenManager.saveToken({
       token: token,

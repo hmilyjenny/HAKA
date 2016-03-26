@@ -33,7 +33,7 @@ export function userSignIn(username, password, cb) {
             username: data.userName,
             userid: data.cuid
         }, serverConfig.secretKEY, {
-            expiresIn: serverConfig.expireAfterMinutes
+            expiresIn: serverConfig.expireInTime
         });
         tokenManager.saveToken({
             token: token,
