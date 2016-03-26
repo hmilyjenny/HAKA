@@ -27,10 +27,7 @@ userPassportRouter.route('/userSignIn/passport').post(
   }),
   function(req, res) {
     res.json({
-      user: {
-        token: req.user.token,
-        username: req.user.username
-      }
+      token: req.user.token
     });
   });
 

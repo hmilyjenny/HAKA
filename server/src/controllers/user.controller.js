@@ -3,10 +3,10 @@ import Tb_UserToken from '../models/databaseModels/tb_UserToken';
 import sanitizeHtml from 'sanitize-html';
 import md5 from 'md5';
 import cuid from 'cuid';
-import {
-  auth as authConfig
-}
-from '../config/ServerConfig';
+import jwt from 'jsonwebtoken';
+import serverConfig from '../config/ServerConfig';
+import userConfig from '../config/UserConfig';
+import * as tokenManager from '../APIs/tokenManager';
 
 /*登录数据上传格式
 application/json
@@ -36,83 +36,67 @@ export function userSignIn(req, res) {
     "loginedTime": Date.now(),
     "loginType": "WEBSITE"
   };
-
   Tb_User.findOneAndUpdate(query, update, (merr, data) => {
     if (merr) {
-      return res.status(403).send('userSignIn-findOneAndUpdate:' + merr);
+      return res.status(500).send('userSignIn-findOneAndUpdate:' + merr);
     }
     if (!data) {
-      return res.status(500).send('用户名或密码错误');
+      return res.status(401).send('用户名或密码错误');
     }
-    let usertoken = new Tb_UserToken();
-    Tb_UserToken.findOne({
-      token: data.cuid
-    }).count().exec((err, count) => {
-      if (count === 0) {
-        tmpcuid = cuid();
-        Tb_User.update({
-          _id: data._id
-        }, {
-          cuid: tmpcuid
-        }, (uerr) => {
-          if (uerr) {
-            return res.status(403).send('userSignIn-Tb_User-update:' + uerr);
-          }
-          usertoken.token = tmpcuid;
-          usertoken.createTime = Date.now();
-          usertoken.save((serr) => {
-            if (serr) {
-              return res.status(403).send('userSignIn-Tb_UserToken-save:' + serr);
-            }
-          });
+    let token = jwt.sign({
+      username: data.userName,
+      userid: data.cuid
+    }, serverConfig.secretKEY, {
+      expiresIn: serverConfig.expireAfterMinutes
+    });
+    tokenManager.saveToken({
+      token: token,
+      cuid: data.cuid
+    }, (err) => {
+      if (err) {
+        return res.status(500).send('tokenManager-saveToken:' + err);
+      } else {
+        return res.json({
+          token: token
         });
       }
-    });
-    Tb_User.findOne(query, '-_id userName cuid').exec((err, newuser) => {
-      if (err) {
-        return res.status(403).send('userSignIn-findOne:' + err);
-      }
-      return res.json({
-        user: {
-          token: tmpcuid == null ? newuser.cuid : tmpcuid,
-          username: newuser.userName
-        }
-      });
     });
   });
 }
 
 export function userLogOut(req, res) {
-  if (!req.body.post) {
-    return res.status(403).send('Please using application/json type request.\r\nExample:{"post": {"username": "123","token": "123"}}');
+  if (!req.headers || !req.headers.authorization) {
+    return res.status(403).send('Reader req.headers failed.\r\nThe headers authorization field is request.');
   }
-  if (!req.body.post.username || !req.body.post.token) {
-    return res.status(403).send('username and token is required.');
-  }
-  let userinfo = new Tb_User();
-  userinfo.userName = sanitizeHtml(req.body.post.username);
-  userinfo.cuid = sanitizeHtml(req.body.post.token);
-  let query = {
-    "userName": userinfo.userName,
-    "cuid": userinfo.cuid,
-  };
-  let update = {
-    "isLogin": false,
-    "logoutedTime": Date.now(),
-    "loginType": null
-  };
-  Tb_User.findOneAndUpdate(query, update, (merr, data) => {
-    if (merr) {
-      return res.status(403).send('userLogOut-findOneAndUpdate:' + merr);
+  tokenManager.decodeToken(req.headers.authorization, (err, data) => {
+    if (err) {
+      return res.status(401).send('Token无效');
+    } else {
+      let query = {
+        userName: data.username,
+        cuid: data.userid
+      };
+      let update = {
+        "isLogin": false,
+        "logoutedTime": Date.now(),
+        "loginType": null
+      };
+      Tb_User.findOneAndUpdate(query, update, (merr, data) => {
+        if (merr) {
+          return res.status(500).send('userLogOut-findOneAndUpdate:' + merr);
+        }
+        if (!data) {
+          return res.status(401).send('Token解析错误或当前用户信息无效');
+        }
+        tokenManager.expireToken(req.headers, (err) => {
+          if (err) {
+            return res.status(500).send('tokenManager-expireToken:' + err);
+          } else {
+            return res.status(200).send('success');
+          }
+        });
+      });
     }
-    if (!data) {
-      return res.status(500).send('用户名或Token错误');
-    }
-    let usertoken = new Tb_UserToken();
-    Tb_UserToken.remove({
-      token: data.cuid
-    }).exec();
-    return res.status(200).send('success');
   });
 }
 
@@ -137,7 +121,7 @@ export function userRegister(req, res) {
 
   newUser.save((err, saved) => {
     if (err) {
-      return res.status(403).send('userSignUp:' + err);
+      return res.status(500).send('userSignUp:' + err);
     }
     return res.status(200).send('success');
   });
@@ -146,12 +130,12 @@ export function userRegister(req, res) {
 export function userSignInforQQ(req, res) {
   popsicle.request({
       method: 'POST',
-      url: authConfig.qq.accessTokenUri,
+      url: userConfig.qq.accessTokenUri,
       body: {
         response_type: 'token',
-        client_id: authConfig.qq.clientID,
-        redirect_uri: authConfig.qq.redirectUri,
-        scope: authConfig.qq.scopes
+        client_id: userConfig.qq.clientID,
+        redirect_uri: userConfig.qq.redirectUri,
+        scope: userConfig.qq.scopes
       },
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
