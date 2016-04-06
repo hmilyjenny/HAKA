@@ -12,7 +12,7 @@ const tbUserSchema = new Schema({
     logoutedTime: {type: 'Date', required: false },
     loginType: {type: 'String', default: 'WEBSITE', required: false },
     createTime: {type: 'Date', default: Date.now, required: true },
-    userRole: {type: 'String', default: 'normal', required:  },
+    userRole: {type: 'String', default: 'normal', required: true },
     cuid:{type: 'String', unique: true, required: true}
 });
 

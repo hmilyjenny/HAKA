@@ -105,17 +105,9 @@ export function expireToken(headers, cb) {
             return cb(null, null);
         }
     });
-};
+}
 
-function getToken(headers) {
-    if (!headers || !headers.authorization) {
-        throw new Error('Token未找到');
-    } else {
-        return headers.authorization;
-    }
-};
-
-function CreateToken(username, cuid, role, cb) {
+export function CreateToken(username, cuid, role, cb) {
     let token = null;
     try {
         token = jwt.sign({
@@ -136,13 +128,10 @@ function RefreshToken(token, cb) {
         if (err1) {
             return cb(new Error(err1.message), 500);
         }
-        token = jwt.sign({
-            username: result.username,
-            userid: result.userid,
-            role: result.userRole
-        }, serverConfig.secretKEY, {
-            expiresIn: serverConfig.expireInTime
-        });
+        let token = null;
+        CreateToken(result.username, result.userid, result.userRole, (err, token) => {
+
+        })
         saveToken({
             token: token,
             cuid: result.userid
@@ -154,4 +143,12 @@ function RefreshToken(token, cb) {
             }
         })
     })
+}
+
+function getToken(headers) {
+    if (!headers || !headers.authorization) {
+        throw new Error('Token未找到');
+    } else {
+        return headers.authorization;
+    }
 };

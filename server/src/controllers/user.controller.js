@@ -41,25 +41,23 @@ export function userSignIn(req, res) {
     if (!data) {
       return res.status(401).send('用户名或密码错误');
     }
-    let token = jwt.sign({
-      username: data.userName,
-      userid: data.cuid,
-      role: data.userRole
-    }, serverConfig.secretKEY, {
-      expiresIn: serverConfig.expireInTime
-    });
-    tokenManager.saveToken({
-      token: token,
-      cuid: data.cuid
-    }, (err) => {
-      if (err) {
-        return res.status(500).send('tokenManager-saveToken:' + err);
-      } else {
-        return res.json({
-          token: token
-        });
+    tokenManager.CreateToken(data.userName, data.cuid, data.userRole, (cerr, token) => {
+      if (cerr) {
+        return res.status(500).send('tokenManager-CreateToken:' + cerr.message);
       }
-    });
+      tokenManager.saveToken({
+        token: token,
+        cuid: data.cuid
+      }, (err) => {
+        if (err) {
+          return res.status(500).send('tokenManager-saveToken:' + err);
+        } else {
+          return res.json({
+            token: token
+          });
+        }
+      });
+    })
   });
 }
 

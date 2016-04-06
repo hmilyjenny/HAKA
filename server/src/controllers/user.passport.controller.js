@@ -4,8 +4,23 @@ import sanitizeHtml from 'sanitize-html';
 import md5 from 'md5';
 import cuid from 'cuid';
 import jwt from 'jsonwebtoken';
+import passport from 'passport';
+import {Strategy as LocalStrategy} from 'passport-local';
 import serverConfig from '../config/ServerConfig';
 import * as tokenManager from '../APIs/tokenManager';
+
+passport.use(new LocalStrategy(
+    function(username, password, cb) {
+        userSignIn(username, password, function(err, user) {
+            if (err) {
+                return cb(err);
+            }
+            if (!user) {
+                return cb(null, false);
+            }
+            return cb(null, user);
+        });
+    }));
 
 export function userSignIn(username, password, cb) {
     let tmpcuid = null;
@@ -21,7 +36,6 @@ export function userSignIn(username, password, cb) {
         "loginedTime": Date.now(),
         "loginType": "WEBSITE"
     };
-
     Tb_User.findOneAndUpdate(query, update, (merr, data) => {
         if (merr) {
             return cb(new Error('userSignIn-findOneAndUpdate:' + merr));
@@ -29,24 +43,22 @@ export function userSignIn(username, password, cb) {
         if (!data) {
             return cb("用户名或密码错误");
         }
-        let token = jwt.sign({
-            username: data.userName,
-            userid: data.cuid,
-            role: data.userRole
-        }, serverConfig.secretKEY, {
-            expiresIn: serverConfig.expireInTime
-        });
-        tokenManager.saveToken({
-            token: token,
-            cuid: data.cuid
-        }, (err) => {
-            if (err) {
-                return cb(new Error('tokenManager-saveToken:' + err));
-            } else {
-                return cb(null, {
-                    token
-                });
+        tokenManager.CreateToken(data.userName, data.cuid, data.userRole, (cerr, token) => {
+            if (cerr) {
+                return cb(new Error(cerr.message))
             }
-        });
+            tokenManager.saveToken({
+                token: token,
+                cuid: data.cuid
+            }, (err) => {
+                if (err) {
+                    return cb(new Error('tokenManager-saveToken:' + err));
+                } else {
+                    return cb(null, {
+                        token
+                    });
+                }
+            });
+        })
     });
 }
