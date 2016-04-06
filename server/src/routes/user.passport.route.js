@@ -1,11 +1,20 @@
-import {Router} from 'express';
+import {
+  Router
+}
+from 'express';
 import passport from 'passport';
-import {Strategy as LocalStrategy} from 'passport-local';
+import {
+  Strategy as LocalStrategy
+}
+from 'passport-local';
 import * as UserObj from '../controllers/user.passport.controller';
 
 const userPassportRouter = new Router();
 
-/*用户名或密码都不能为空，否则会报fashManage的错误*/
+/*
+ * 用户名或密码都不能为空，否则会报fashManage的错误
+ * TypeError: req.flash is not a function
+ */
 
 passport.use(new LocalStrategy(
   function(username, password, cb) {

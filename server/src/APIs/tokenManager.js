@@ -1,4 +1,6 @@
+import Tb_User from '../models/databaseModels/tb_User';
 import Tb_UserToken from '../models/databaseModels/tb_UserToken';
+import serverConfig from '../config/ServerConfig';
 import jwt from 'jsonwebtoken';
 
 // token验证中间件
@@ -11,7 +13,7 @@ export function decodeToken(token, cb) {
         userInfo = jwt.decode(token, {
             complete: true
         });
-        if(!userInfo){
+        if (!userInfo) {
             throw new Error('');
         }
     } catch (e) {
@@ -21,56 +23,78 @@ export function decodeToken(token, cb) {
 }
 
 export function saveToken(data, cb) {
-    let newtoken = new Tb_UserToken();
-    newtoken.cuid = data.cuid;
-    newtoken.token = data.token;
-    newtoken.createTime = Date.now();
-    newtoken.save((err) => {
+    let queryCon = {
+        cuid: data.cuid
+    };
+    let updateCon = {
+        cuid: data.cuid,
+        token: data.token,
+        createTime: Date.now()
+    }
+    Tb_UserToken.findOneAndUpdate(queryCon, updateCon, {
+        upsert: true
+    }, (err) => {
         if (err) {
-            let queryObj = {
-                cuid: data.cuid
-            };
-            let updateObj = {
-                token: data.token,
-                createTime: Date.now()
-            };
-            Tb_UserToken.update(queryObj, updateObj, (uerr) => {
-                if (uerr) {
-                    return cb(new Error('Token保存失败:' + uerr));
-                } else {
-                    return cb(null, "success");
-                }
-            });
+            return cb(new Error('Token保存失败:' + err.message));
         } else {
             return cb(null, "success");
         }
     });
 }
 
-export function verifyToken(req, res, next) {
+export function verifyToken(headers, cb) {
     let token = null;
     try {
-        token = getToken(req.headers);
+        token = getToken(headers);
     } catch (e) {
-        res.status(403).send(e);
+        return cb(new Error(e.message), 403);
     }
+    let returnStr = "-_id userName cuid";
     Tb_UserToken.findOne({
         token: token
-    }).exec((err, data) => {
-        if (!data || err) {
-            res.status(401).send("Token验证失败" + err ? err : "");
+    }, returnStr).exec((err, data) => {
+        if (err) {
+            return cb(new Error("Token验证失败:" + err.message), 401);
         } else {
-            next();
+            if (!data) {
+                RefreshToken(token, (rerr, newToken) => {
+                    if (rerr) {
+                        return cb(new Error("Token刷新失败:" + rerr.message), 500);
+                    }
+                    decodeToken(token, (derr, result) => {
+                        if (derr) {
+                            return cb(new Error("Token解码失败:" + derr.message), 500);
+                        }
+                        let returnObj = {};
+                        returnObj.newToken = newToken;
+                        returnObj.cuid = result.userid;
+                        returnObj.userName = result.username;
+                        return cb(null, null, returnObj);
+                        next();
+                    });
+                });
+            } else {
+                Tb_User.findOne({
+                    cuid: data.cuid
+                }, returnStr).exec((uerr, udata) => {
+                    if (!udata || uerr) {
+                        return cb(new Error("根据Token获取用户信息失败" + (uerr ? uerr.message : "")), 500);
+                    } else {
+                        return cb(null, null, udata);
+                        next();
+                    }
+                });
+            }
         }
     });
-};
+}
 
 export function expireToken(headers, cb) {
     let token = null;
     try {
         token = getToken(headers);
     } catch (e) {
-        return cb(new Error(e));
+        return cb(new Error(e.message));
     }
     Tb_UserToken.findOneAndRemove({
         token: token
@@ -89,4 +113,45 @@ function getToken(headers) {
     } else {
         return headers.authorization;
     }
+};
+
+function CreateToken(username, cuid, role, cb) {
+    let token = null;
+    try {
+        token = jwt.sign({
+            username: username,
+            userid: cuid,
+            role: role
+        }, serverConfig.secretKEY, {
+            expiresIn: serverConfig.expireInTime
+        });
+        return cb(null, token);
+    } catch (e) {
+        return cb(new Error(e.message));
+    }
+}
+
+function RefreshToken(token, cb) {
+    decodeToken(token, (err1, result) => {
+        if (err1) {
+            return cb(new Error(err1.message), 500);
+        }
+        token = jwt.sign({
+            username: result.username,
+            userid: result.userid,
+            role: result.userRole
+        }, serverConfig.secretKEY, {
+            expiresIn: serverConfig.expireInTime
+        });
+        saveToken({
+            token: token,
+            cuid: result.userid
+        }, (err2) => {
+            if (err2) {
+                return cb(new Error(err2.message), 500);
+            } else {
+                return cb(null, token);
+            }
+        })
+    })
 };

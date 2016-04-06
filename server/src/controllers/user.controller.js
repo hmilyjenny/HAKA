@@ -17,16 +17,14 @@ application/json
   }
 }*/
 export function userSignIn(req, res) {
-  if (!req.body.post) {
-    return res.status(403).send('Please using application/json type request.\r\nExample:{"post": {"username": "123","password": "123"}}');
-  }
-  if (!req.body.post.username || !req.body.post.password) {
+  if (!req.body.username || !req.body.password) {
     return res.status(403).send('username and password is required.');
   }
+
   let tmpcuid = null;
   let userinfo = new Tb_User();
-  userinfo.userName = sanitizeHtml(req.body.post.username);
-  userinfo.userPassword = md5(sanitizeHtml(req.body.post.password));
+  userinfo.userName = sanitizeHtml(req.body.username);
+  userinfo.userPassword = md5(sanitizeHtml(req.body.password));
   let query = {
     "userName": userinfo.userName,
     "userPassword": userinfo.userPassword,
@@ -45,7 +43,8 @@ export function userSignIn(req, res) {
     }
     let token = jwt.sign({
       username: data.userName,
-      userid: data.cuid
+      userid: data.cuid,
+      role: data.userRole
     }, serverConfig.secretKEY, {
       expiresIn: serverConfig.expireInTime
     });
@@ -101,17 +100,14 @@ export function userLogOut(req, res) {
 }
 
 export function userRegister(req, res) {
-  if (!req.body.post) {
-    return res.status(403).send('Please using application/json type request.\r\nExample:{"post": {"username": "123","password": "123".......}}');
-  }
-  if (!req.body.post.username || !req.body.post.password) {
+  if (!req.body.username || !req.body.password) {
     return res.status(403).send('username and password is required.');
   }
   let newUser = new Tb_User();
-  newUser.userName = sanitizeHtml(req.body.post.username);
-  newUser.userPassword = md5(sanitizeHtml(req.body.post.password));
-  newUser.userEmail = sanitizeHtml(req.body.post.email);
-  newUser.userTel = sanitizeHtml(req.body.post.tel);
+  newUser.userName = sanitizeHtml(req.body.username);
+  newUser.userPassword = md5(sanitizeHtml(req.body.password));
+  newUser.userEmail = sanitizeHtml(req.body.email);
+  newUser.userTel = sanitizeHtml(req.body.tel);
   newUser.isLogin = false;
   newUser.loginedTime = null;
   newUser.logoutedTime = null;

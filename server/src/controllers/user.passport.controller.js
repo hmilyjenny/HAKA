@@ -31,7 +31,8 @@ export function userSignIn(username, password, cb) {
         }
         let token = jwt.sign({
             username: data.userName,
-            userid: data.cuid
+            userid: data.cuid,
+            role: data.userRole
         }, serverConfig.secretKEY, {
             expiresIn: serverConfig.expireInTime
         });
