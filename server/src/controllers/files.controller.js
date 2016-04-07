@@ -1,4 +1,5 @@
-import * as fileManager from '../APIs/fileManager'
+import * as fileManager from '../APIs/fileManager';
+import path from 'path';
 
 export function fileUpload(req, res) {
     fileManager.fileUpload(req.headers.userinfo, req, (err, result) => {
@@ -80,6 +81,25 @@ export function fileShowFile(req, res) {
             }
             res.write(result, "binary");
             res.end();
+        }
+    });
+}
+
+export function fileLoadFile(req, res) {
+    if (!req.params.filename || !req.params.cuid) {
+        return res.status(403).send('未发现filename或cuid参数');
+    }
+    let userinfo = {
+        newToken: null,
+        cuid: req.params.cuid
+    };
+    let clientName = req.params.filename;
+    let filetype = req.params.filetype;
+    fileManager.fileShowURL(userinfo, clientName, filetype, (err, result) => {
+        if (err) {
+            res.status(500).send(err.message);
+        } else {
+            res.sendFile(path.resolve(result));
         }
     });
 }

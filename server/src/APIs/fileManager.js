@@ -173,7 +173,6 @@ export function fileShowFile(userinfo, clientName, filetype, cb) {
     };
     let resultStr = "-_id  hostSourceFile hostDatFile hostJsonFile";
     Tb_Files.findOne(queryCon, resultStr, (err1, datas) => {
-        console.log(datas);
         if (err1 || !datas) {
             return cb(new Error("未发现文件数据" + (err1 ? ":" + err1.message : "")));
         } else {
@@ -213,6 +212,31 @@ export function fileShowFile(userinfo, clientName, filetype, cb) {
                             return cb(null, file);
                         }
                     })
+                    break;
+            }
+        }
+    });
+}
+
+export function fileShowURL(userinfo, clientName, filetype, cb) {
+    let queryCon = {
+        "cuid": userinfo.cuid,
+        "clientName": clientName
+    };
+    let resultStr = "-_id  hostSourceFile hostDatFile hostJsonFile";
+    Tb_Files.findOne(queryCon, resultStr, (err1, datas) => {
+        if (err1 || !datas) {
+            return cb(new Error("未发现文件数据" + (err1 ? ":" + err1.message : "")));
+        } else {
+            switch (filetype) {
+                case "json":
+                    return cb(null, datas.hostJsonFile);
+                    break;
+                case "data":
+                    return cb(null, datas.hostDatFile);
+                    break;
+                default:
+                    return cb(null, datas.hostSourceFile);
                     break;
             }
         }

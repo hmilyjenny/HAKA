@@ -74,7 +74,7 @@ app.use(function(req, res, next) {
         logObj.cuid = cuid ? cuid : "unknown";
         logObj.userName = userName ? userName : "unknown";
         logObj.clientIP = logManager.getClientIp(req);
-        logObj.handleResult = req.url;
+        logObj.handleModule = req.url ? req.url : "unknown";
         // logObj.handleModule = "token验证";
         // logObj.handleHostModule = "token.controllers";
         // logObj.sendResult = "unknow";
