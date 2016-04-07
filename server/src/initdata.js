@@ -11,8 +11,8 @@ export default function() {
     const userMain = new tbUser({
       userName: 'administrator',
       userPassword: md5(tmpPW),
-      userEmail: null,
-      userTel: null,
+      userEmail: 'zyguard@gmail.com',
+      userTel: '13811524454',
       isLogin: false,
       loginedTime: null,
       logoutedTime: null,

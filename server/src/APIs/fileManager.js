@@ -27,23 +27,23 @@ export function fileUpload(userinfo, req, cb) {
     // 解析并保存文件块到默认路径
     form.parse(req, function(err, fields, files) {
         if (err) {
-            return cb(new Error(err));
+            return cb(new Error(err), 500);
         }
     });
     form.on('aborted', function(err) {
         if (err) {
-            return cb(new Error(err));
+            return cb(new Error(err), 500);
         }
     });
     form.on('error', function(err) {
         if (err) {
-            return cb(new Error(err));
+            return cb(new Error(err), 500);
         }
     });
     // 在文件保存到临时目录后，再转移到永久保存区路径下
     form.on('end', function(fields, files) {
         if (!this.openedFiles || this.openedFiles.length === 0) {
-            return cb(new Error("未发现上传文件"));
+            return cb(new Error("未发现上传文件"), 404);
         }
         let resultFileObj = {
             successfiles: [],
@@ -122,7 +122,7 @@ export function fileUpload(userinfo, req, cb) {
                 })
             }], (asyncErr, result) => {
                 if (result === tmpfiles.length) {
-                    return cb(null, resultFileObj);
+                    return cb(null, 200, resultFileObj);
                 }
             });
         });
@@ -136,18 +136,21 @@ export function fileRemove(userinfo, clientName, cb) {
     };
     Tb_Files.findOneAndRemove(query, (err, data) => {
         if (err) {
-            return cb(new Error(err));
+            return cb(new Error(err), 500);
         }
         let returnObj = {};
+        let pageState = 0;
         if (data) {
             fileDelete(data.hostSourceFile);
             fileDelete(data.hostDatFile);
             fileDelete(data.hostJsonFile);
+            pageState = 200;
             returnObj.state = "success";
         } else {
+            pageState = 404;
             returnObj.state = "未发现文件数据";
         }
-        return cb(null, returnObj);
+        return cb(null, pageState, returnObj);
     });
 }
 
@@ -158,11 +161,11 @@ export function fileShowData(userinfo, cb) {
     let resultFields = "-_id clientName";
     Tb_Files.find(queryCon, resultFields, (err, resultData) => {
         if (err) {
-            return cb(new Error(err.message));
+            return cb(new Error(err), 500);
         }
         let returnObj = {};
         returnObj.filesData = resultData;
-        return cb(null, returnObj);
+        return cb(null, 200, returnObj);
     });
 }
 
@@ -174,42 +177,46 @@ export function fileShowFile(userinfo, clientName, filetype, cb) {
     let resultStr = "-_id  hostSourceFile hostDatFile hostJsonFile";
     Tb_Files.findOne(queryCon, resultStr, (err1, datas) => {
         if (err1 || !datas) {
-            return cb(new Error("未发现文件数据" + (err1 ? ":" + err1.message : "")));
+            if (err1) {
+                return cb(new Error(err1), 500);
+            } else {
+                return cb(new Error("未发现文件数据"), 404);
+            }
         } else {
             switch (filetype) {
                 case "mp3":
                     fs.readFile(datas.hostSourceFile, "binary", (err2, file) => {
                         if (err2) {
-                            return cb(new Error(err2));
+                            return cb(new Error(err2), 500);
                         } else {
-                            return cb(null, file);
+                            return cb(null, 200, file);
                         }
                     })
                     break;
                 case "data":
                     fs.readFile(datas.hostDatFile, "binary", (err2, file) => {
                         if (err2) {
-                            return cb(new Error(err2));
+                            return cb(new Error(err2), 500);
                         } else {
-                            return cb(null, file);
+                            return cb(null, 200, file);
                         }
                     })
                     break;
                 case "json":
                     fs.readFile(datas.hostJsonFile, "binary", (err2, file) => {
                         if (err2) {
-                            return cb(new Error(err2));
+                            return cb(new Error(err2), 500);
                         } else {
-                            return cb(null, file);
+                            return cb(null, 200, file);
                         }
                     })
                     break;
                 default:
                     fs.readFile(datas.hostSourceFile, "binary", (err2, file) => {
                         if (err2) {
-                            return cb(new Error(err2));
+                            return cb(new Error(err2), 500);
                         } else {
-                            return cb(null, file);
+                            return cb(null, 200, file);
                         }
                     })
                     break;
@@ -226,17 +233,21 @@ export function fileShowURL(userinfo, clientName, filetype, cb) {
     let resultStr = "-_id  hostSourceFile hostDatFile hostJsonFile";
     Tb_Files.findOne(queryCon, resultStr, (err1, datas) => {
         if (err1 || !datas) {
-            return cb(new Error("未发现文件数据" + (err1 ? ":" + err1.message : "")));
+            if (err1) {
+                return cb(new Error(err1), 500);
+            } else {
+                return cb(new Error("未发现文件数据"), 404);
+            }
         } else {
             switch (filetype) {
                 case "json":
-                    return cb(null, datas.hostJsonFile);
+                    return cb(null, 200, datas.hostJsonFile);
                     break;
                 case "data":
-                    return cb(null, datas.hostDatFile);
+                    return cb(null, 200, datas.hostDatFile);
                     break;
                 default:
-                    return cb(null, datas.hostSourceFile);
+                    return cb(null, 200, datas.hostSourceFile);
                     break;
             }
         }

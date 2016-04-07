@@ -28,7 +28,13 @@ export function userSignIn(username, password, cb) {
     userinfo.userName = sanitizeHtml(username);
     userinfo.userPassword = md5(sanitizeHtml(password));
     let query = {
-        "userName": userinfo.userName,
+        $or: [{
+            "userName": userinfo.userName
+        }, {
+            "userEmail": userinfo.userName
+        }, {
+            "userTel": userinfo.userName
+        }],
         "userPassword": userinfo.userPassword,
     };
     let update = {

@@ -84,6 +84,7 @@ app.use(function(req, res, next) {
         logManager.logSaveToDB(logObj, (err, data) => {
             if (err) console.log(err.message)
         });
+        res.set('RefreshToken', req.headers.RefreshToken ? true : false);
         // 控制权交回
         return _send.apply(res, arguments);
     };

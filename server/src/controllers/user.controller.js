@@ -8,17 +8,10 @@ import serverConfig from '../config/ServerConfig';
 import userConfig from '../config/UserConfig';
 import * as tokenManager from '../APIs/tokenManager';
 
-/*登录数据上传格式
-application/json
-{
-  "post": {
-    "username": "administrator",
-    "password": "lhzy1234561"
-  }
-}*/
+// 登录数据上传格式
 export function userSignIn(req, res) {
   if (!req.body.username || !req.body.password) {
-    return res.status(403).send('username and password is required.');
+    return res.status(400).send('username and password is required.');
   }
 
   let tmpcuid = null;
@@ -26,7 +19,13 @@ export function userSignIn(req, res) {
   userinfo.userName = sanitizeHtml(req.body.username);
   userinfo.userPassword = md5(sanitizeHtml(req.body.password));
   let query = {
-    "userName": userinfo.userName,
+    $or: [{
+      "userName": userinfo.userName
+    }, {
+      "userEmail": userinfo.userName
+    }, {
+      "userTel": userinfo.userName
+    }],
     "userPassword": userinfo.userPassword,
   };
   let update = {
@@ -63,7 +62,7 @@ export function userSignIn(req, res) {
 
 export function userLogOut(req, res) {
   if (!req.headers || !req.headers.authorization) {
-    return res.status(403).send('Reader req.headers failed.\r\nThe headers authorization field is request.');
+    return res.status(400).send('Reader req.headers failed.\r\nThe headers authorization field is request.');
   }
   tokenManager.decodeToken(req.headers.authorization, (err, data) => {
     if (err) {
@@ -85,11 +84,11 @@ export function userLogOut(req, res) {
         if (!data) {
           return res.status(401).send('Token解析错误或当前用户信息无效');
         }
-        tokenManager.expireToken(req.headers, (err) => {
+        tokenManager.expireToken(req.headers, (err, code) => {
           if (err) {
-            return res.status(500).send('tokenManager-expireToken:' + err);
+            return res.status(code).send('tokenManager-expireToken:' + err);
           } else {
-            return res.status(200).send('success');
+            return res.status(code).send('success');
           }
         });
       });
@@ -99,7 +98,7 @@ export function userLogOut(req, res) {
 
 export function userRegister(req, res) {
   if (!req.body.username || !req.body.password) {
-    return res.status(403).send('username and password is required.');
+    return res.status(400).send('username and password is required.');
   }
   let newUser = new Tb_User();
   newUser.userName = sanitizeHtml(req.body.username);

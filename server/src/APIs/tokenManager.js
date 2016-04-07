@@ -47,32 +47,28 @@ export function verifyToken(headers, cb) {
     try {
         token = getToken(headers);
     } catch (e) {
-        return cb(new Error(e.message), 403);
+        return cb(new Error(e.message), 412);
     }
     let returnStr = "-_id userName cuid";
     Tb_UserToken.findOne({
         token: token
     }, returnStr).exec((err, data) => {
         if (err) {
-            return cb(new Error("Token验证失败:" + err.message), 401);
+            return cb(new Error("Token验证失败:" + err.message), 500);
         } else {
             if (!data) {
-                RefreshToken(token, (rerr, newToken) => {
-                    if (rerr) {
-                        return cb(new Error("Token刷新失败:" + rerr.message), 500);
-                    }
-                    decodeToken(token, (derr, result) => {
-                        if (derr) {
-                            return cb(new Error("Token解码失败:" + derr.message), 500);
-                        }
+                decodeToken(token, (err, result) => {
+                    if (err) {
+                        return cb(new Error(err.message), 401);
+                    } else {
                         let returnObj = {};
-                        returnObj.newToken = newToken;
                         returnObj.cuid = result.userid;
                         returnObj.userName = result.username;
-                        return cb(null, null, returnObj);
+                        returnObj.role = result.role;
+                        return cb(null, 401, returnObj);
                         next();
-                    });
-                });
+                    }
+                })
             } else {
                 Tb_User.findOne({
                     cuid: data.cuid
@@ -94,15 +90,15 @@ export function expireToken(headers, cb) {
     try {
         token = getToken(headers);
     } catch (e) {
-        return cb(new Error(e.message));
+        return cb(new Error(e), 412);
     }
     Tb_UserToken.findOneAndRemove({
         token: token
     }).exec((err) => {
         if (err) {
-            return cb(new Error('移除Token出现问题：' + err));
+            return cb(new Error('移除Token出现问题：' + err), 500);
         } else {
-            return cb(null, null);
+            return cb(null, 200, null);
         }
     });
 }
@@ -123,24 +119,26 @@ export function CreateToken(username, cuid, role, cb) {
     }
 }
 
-function RefreshToken(token, cb) {
+export function RefreshToken(token, cb) {
     decodeToken(token, (err1, result) => {
         if (err1) {
-            return cb(new Error(err1.message), 500);
+            return cb(new Error(err1), 401);
         }
-        let token = null;
-        CreateToken(result.username, result.userid, result.userRole, (err, token) => {
-
-        })
-        saveToken({
-            token: token,
-            cuid: result.userid
-        }, (err2) => {
+        token = null;
+        CreateToken(result.username, result.userid, result.role, (err2, token) => {
             if (err2) {
-                return cb(new Error(err2.message), 500);
-            } else {
-                return cb(null, token);
+                return cb(new Error(err2), 500);
             }
+            saveToken({
+                token: token,
+                cuid: result.userid
+            }, (err3) => {
+                if (err3) {
+                    return cb(new Error(err3), 500);
+                } else {
+                    return cb(null, 200, token);
+                }
+            })
         })
     })
 }

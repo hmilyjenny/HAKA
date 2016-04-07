@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import ms from 'ms';
+import serverConfig from '../../config/ServerConfig';
 
 const Schema = mongoose.Schema;
 
@@ -17,5 +19,6 @@ const tbLogsSchema = new Schema({
 tbLogsSchema.index({ cuid: 1 });
 tbLogsSchema.index({ userName: 1 });
 tbLogsSchema.index({ handleResult: 1 });
+tbLogsSchema.index({ handleDate: 1 }, {expireAfterSeconds: ms(serverConfig.expireInTime) / 1000});
 
 export default mongoose.model('Tb_Logs', tbLogsSchema);

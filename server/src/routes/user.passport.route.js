@@ -1,6 +1,7 @@
 import {Router} from 'express';
 import passport from 'passport';
 import * as UserObj from '../controllers/user.passport.controller';
+import * as tokenManager from '../controllers/token.controller';
 
 const userPassportRouter = new Router();
 
@@ -19,6 +20,7 @@ userPassportRouter.route('/userSignIn/passport').post(
     });
   });
 
+userPassportRouter.route('/refreshtoken').post(tokenManager.RefreshToken);
 /*userPassportRouter.route('/userSignIn/QQ/passport').post(UserController.userSignIn);
 userPassportRouter.route('/userSignIn/WEIXIN/passport').post(UserController.userSignIn);
 userPassportRouter.route('/userSignIn/WEIBO/passport').post(UserController.userSignIn);*/
