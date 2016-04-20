@@ -10,6 +10,7 @@ const tbFilesSchema = new Schema({
     hostDatFile: {type: 'String', required: false },
     hostJsonFile: {type: 'String', required: false},
     used: {type:'Boolean', default: false, required: true},
+    projectName: {type: 'String', required: false},
     createTime: {type: 'Date', default: Date.now, required: true }
 });
 

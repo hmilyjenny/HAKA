@@ -1,6 +1,51 @@
 import * as fileManager from '../APIs/fileManager';
 import path from 'path';
 
+export function fileUploadToDB(req, res) {
+    fileManager.fileUploadToDB(req.headers.userinfo, req, (err, code, result) => {
+        if (err) {
+            res.status(code).send(err.message);
+        } else {
+            res.status(code).send(result);
+        }
+    });
+}
+
+export function getGridFileFromDB(req,res){
+    if(!req.body.fileid){
+        return res.status(400).send('未发现fileid参数');
+    }
+    //该处为测试参数，正常的应该是发送特定的查询参数
+    let metadata={filetype: 'image/png'};
+    fileManager.getGridFile(req.body.fileid,metadata,(err,result)=>{
+        if(err){
+            res.status(500).send(err.message);
+        }
+        else {
+            result.close();
+            res.writeHead(200, {
+                "Content-Type": result.contentType
+            });
+            res.write(result.currentChunk.data.buffer, "binary");
+            res.end();
+        }
+    });
+}
+
+export function fileRemoveToDB(req,res){
+    if(!req.body.fileid){
+        return res.status(400).send('未发现fileid参数');
+    }
+    fileManager.deleteGridFile(req.body.fileid,(err,result)=>{
+        if(err){
+            res.status(500).send(err.message);
+        }
+        else{
+            res.status(200).send({"state":"success"});
+        }
+    });
+}
+
 export function fileUpload(req, res) {
     fileManager.fileUpload(req.headers.userinfo, req, (err, code, result) => {
         if (err) {

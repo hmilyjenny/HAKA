@@ -3,11 +3,140 @@ import path from 'path';
 import fs from 'fs';
 import fsextra from 'fs-extra';
 import formidable from 'formidable';
+import mongoose from 'mongoose';
 import cprocess from 'child_process';
 import cuid from 'cuid';
 import Tb_Files from '../models/databaseModels/tb_Files';
 import serverConfig from '../config/ServerConfig';
 
+const GridFSBucket = mongoose.mongo.GridFSBucket;
+const ObjectID = mongoose.mongo.ObjectID;
+
+//使用二进制的方式将文件存储到mongodb
+export function fileUploadToDB(userinfo, req, cb) {
+    let form = new formidable.IncomingForm();
+    let tempdir = serverConfig.tmpfileUploadUrl + userinfo.cuid + '/';
+    form.multiples = true;
+    form.keepExtensions = true;
+    form.uploadDir = tempdir;
+    form.maxFieldsSize = serverConfig.fileChunkSize * 1024 * 1024;
+    //创建临时文件保存区
+    if (fsextra.ensureDirSync(tempdir)) {
+        console.log('创建上传临时文件夹成功:' + tempdir);
+    }
+    // 解析并保存文件块到默认路径
+    form.parse(req, function(err, fields, files) {
+        if (err) {
+            return cb(new Error(err), 500);
+        }
+    });
+    form.on('aborted', function(err) {
+        if (err) {
+            return cb(new Error(err), 500);
+        }
+    });
+    form.on('error', function(err) {
+        if (err) {
+            return cb(new Error(err), 500);
+        }
+    });
+    // 在文件保存到临时目录后，再转移到mongodb
+    form.on('end', function(fields, files) {
+        if (!this.openedFiles || this.openedFiles.length === 0) {
+            return cb(new Error("未发现上传文件"), 404);
+        }
+        let resultFileObj = {
+            successfiles: [],
+            failedfiles: []
+        };
+        async.forEachOfSeries(this.openedFiles, (file, index, callback) => {
+            let options = {
+                content_type: file.type,
+                metadata: {
+                    "filetype": file.type
+                }
+            };
+            let id = new ObjectID();
+            putGridFileByPath(file.path, id, file.name, options, (err, result) => {
+                if (err) {
+                    let failedObj = {};
+                    failedObj.clientfilename = file.name;
+                    failedObj.error = err.message;
+                    resultFileObj.failedfiles.push(failedObj);
+                } else {
+                    let fileObj = {};
+                    fileObj.clientfilename = file.name;
+                    fileObj.hostsourcefile = id;
+                    resultFileObj.successfiles.push(fileObj);
+                }
+                fs.unlinkSync(file.path);
+                callback();
+            });
+        }, function(err) {
+            if (err) {
+                return cb(new Error(err), 500);
+            }
+            return cb(null, 200, resultFileObj);
+        });
+    });
+}
+
+//通过文件ID获取文件
+export function getGridFile(id,metadata, cb) {
+    let tmpid = new ObjectID(id);
+    let db = mongoose.connection.db;
+    let store = new GridStore(db, tmpid,metadata, "r", {
+        root: 'fs'
+    });
+    store.open(function(err, store) {
+        if (err) {
+            return cb(new Error(err));
+        } else {
+            return cb(null, store);
+        }
+    })
+}
+
+//使用二进制的方式将文件存储到mongodb
+function putGridFile(buf, id, name, options, cb) {
+    let db = mongoose.connection.db;
+    new GridStore(db, id, name, "w", options).open(function(err, file) {
+        if (err) {
+            return cb(new Error(err));
+        } else {
+            file.write(buf, true, cb);
+        }
+    });
+}
+
+//通过文件路径将文件存储到mongodb
+function putGridFileByPath(path, id, name, options, cb) {
+    let db = mongoose.connection.db;
+    new GridStore(db, id, name, "w", options).open(function(err, file) {
+        if (err) {
+            return cb(new Error(err));
+        } else {
+            file.writeFile(path, cb);
+        }
+    });
+}
+
+//通过文件ID删除文件
+export function deleteGridFile(id, cb) {
+    let db = mongoose.connection.db;
+    let tmpid = new ObjectID(id);
+    let store = new GridStore(db, tmpid, 'r', {
+        root: 'fs'
+    });
+    store.unlink(function(err, result) {
+        if (err) {
+            return cb(new Error(err));
+        }
+        return cb(null);
+    });
+}
+
+// 使用formidable上传,并存储到本地
 export function fileUpload(userinfo, req, cb) {
     // 如果发送的是二进制数据，使用formidable来提取并保存
     let form = new formidable.IncomingForm();
@@ -159,7 +288,12 @@ export function fileShowData(userinfo, cb) {
         "cuid": userinfo.cuid
     };
     let resultFields = "-_id clientName";
-    Tb_Files.find(queryCon, resultFields, (err, resultData) => {
+    let sort = {
+        sort: {
+            createTime: -1
+        }
+    };
+    Tb_Files.find(queryCon, resultFields, sort, (err, resultData) => {
         if (err) {
             return cb(new Error(err), 500);
         }
