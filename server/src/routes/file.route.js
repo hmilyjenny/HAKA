@@ -5,6 +5,7 @@ const fileRouter = new Router();
 
 fileRouter.route('/file/uploadtodb').post(tokenManager.verifyToken,filesController.fileUploadToDB);
 fileRouter.route('/file/getgridfile').post(tokenManager.verifyToken,filesController.getGridFileFromDB);
+fileRouter.route('/file/getgridfilefromdb').post(tokenManager.verifyToken,filesController.getBucketFileFromDB);
 fileRouter.route('/file/removetodb').post(tokenManager.verifyToken, filesController.fileRemoveToDB);
 fileRouter.route('/file/upload').post(tokenManager.verifyToken, filesController.fileUpload);
 fileRouter.route('/file/remove').post(tokenManager.verifyToken, filesController.fileRemove);

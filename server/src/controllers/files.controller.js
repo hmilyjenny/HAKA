@@ -1,8 +1,11 @@
 import * as fileManager from '../APIs/fileManager';
+import fs from 'fs';
 import path from 'path';
 
 export function fileUploadToDB(req, res) {
-    fileManager.fileUploadToDB(req.headers.userinfo, req, (err, code, result) => {
+    //fileUploadToDB
+    //fileUploadToDB_GridFSBucket
+    fileManager.fileUploadToDB_GridFSBucket(req.headers.userinfo, req, (err, code, result) => {
         if (err) {
             res.status(code).send(err.message);
         } else {
@@ -11,14 +14,14 @@ export function fileUploadToDB(req, res) {
     });
 }
 
-export function getGridFileFromDB(req,res){
-    if(!req.body.fileid){
+export function getGridFileFromDB(req, res) {
+    if (!req.body.fileid) {
         return res.status(400).send('未发现fileid参数');
     }
     //该处为测试参数，正常的应该是发送特定的查询参数
-    let metadata={filetype: 'image/png'};
-    fileManager.getGridFile(req.body.fileid,metadata,(err,result)=>{
-        if(err){
+    let metadata = {filetype: 'image/png'};
+    fileManager.getGridFile(req.body.fileid, metadata, (err, result)=> {
+        if (err) {
             res.status(500).send(err.message);
         }
         else {
@@ -32,16 +35,39 @@ export function getGridFileFromDB(req,res){
     });
 }
 
-export function fileRemoveToDB(req,res){
-    if(!req.body.fileid){
+export function getBucketFileFromDB(req, res) {
+    if (!req.body.fileid) {
         return res.status(400).send('未发现fileid参数');
     }
-    fileManager.deleteGridFile(req.body.fileid,(err,result)=>{
-        if(err){
+    fileManager.getBucketFile(req.headers.userinfo.cuid, req.body.fileid, req.body.filename, (err, result)=> {
+        if (err) {
             res.status(500).send(err.message);
         }
-        else{
-            res.status(200).send({"state":"success"});
+        else {
+            res.status(200).sendFile(path.resolve(result),(err)=>{
+                if(err){
+                    res.status(err.status).send(err.message);
+                }
+                else{
+                    fs.unlinkSync(result);
+                }
+            });
+        }
+    });
+}
+
+export function fileRemoveToDB(req, res) {
+    if (!req.body.fileid) {
+        return res.status(400).send('未发现fileid参数');
+    }
+    //deleteGridFS
+    //deleteGridFile
+    fileManager.deleteGridFS(req.body.fileid, (err, result)=> {
+        if (err) {
+            res.status(500).send(err.message);
+        }
+        else {
+            res.status(200).send({"state": "success"});
         }
     });
 }

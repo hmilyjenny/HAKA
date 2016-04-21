@@ -9,8 +9,9 @@ import cuid from 'cuid';
 import Tb_Files from '../models/databaseModels/tb_Files';
 import serverConfig from '../config/ServerConfig';
 
-const GridFSBucket = mongoose.mongo.GridFSBucket;
+const GridStore = mongoose.mongo.GridStore;
 const ObjectID = mongoose.mongo.ObjectID;
+const FSBucket = mongoose.mongo.GridFSBucket;
 
 //使用二进制的方式将文件存储到mongodb
 export function fileUploadToDB(userinfo, req, cb) {
@@ -80,7 +81,93 @@ export function fileUploadToDB(userinfo, req, cb) {
         });
     });
 }
-
+//通过GridFSBucket,使用二进制的方式将文件存储到mongodb
+export function fileUploadToDB_GridFSBucket(userinfo,req,cb){
+    let form = new formidable.IncomingForm();
+    let tempdir = serverConfig.tmpfileUploadUrl + userinfo.cuid + '/';
+    form.multiples = true;
+    form.keepExtensions = true;
+    form.uploadDir = tempdir;
+    form.maxFieldsSize = serverConfig.fileChunkSize * 1024 * 1024;
+    //创建临时文件保存区
+    if (fsextra.ensureDirSync(tempdir)) {
+        console.log('创建上传临时文件夹成功:' + tempdir);
+    }
+    // 解析并保存文件块到默认路径
+    form.parse(req, function(err, fields, files) {
+        if (err) {
+            return cb(new Error(err), 500);
+        }
+    });
+    form.on('aborted', function(err) {
+        if (err) {
+            return cb(new Error(err), 500);
+        }
+    });
+    form.on('error', function(err) {
+        if (err) {
+            return cb(new Error(err), 500);
+        }
+    });
+    // 在文件保存到临时目录后，再转移到mongodb
+    form.on('end', function(fields, files) {
+        if (!this.openedFiles || this.openedFiles.length === 0) {
+            return cb(new Error("未发现上传文件"), 404);
+        }
+        let resultFileObj = {
+            successfiles: [],
+            failedfiles: []
+        };
+        let db = mongoose.connection.db;
+        let store=new FSBucket(db);
+        async.forEachOfSeries(this.openedFiles, (file, index, callback) => {
+            let options = {
+                contentType: file.type,
+                metadata: {
+                    "filename": file.name,
+                    "filetype": file.type
+                }
+            };
+            let id = new ObjectID();
+            fs.createReadStream(file.path).pipe(store.openUploadStream(id, options)).
+            on('error', function(err) {
+                let failedObj = {};
+                failedObj.clientfilename = file.name;
+                failedObj.error = err.message;
+                resultFileObj.failedfiles.push(failedObj);
+                callback();
+            }).
+            on('finish', function() {
+                let fileObj = {};
+                fileObj.clientfilename = file.name;
+                fileObj.hostsourcefile = id;
+                resultFileObj.successfiles.push(fileObj);
+                //process.exit(0);
+                callback();
+            });
+            fs.unlinkSync(file.path);
+        }, function(err) {
+            if (err) {
+                return cb(new Error(err), 500);
+            }
+            return cb(null, 200, resultFileObj);
+        });
+    });
+}
+//通过GridFSBucket,使用ID获取存储的文件
+export function getBucketFile(cuid, id, filename, cb){
+    let tmpid = new ObjectID(id);
+    let db = mongoose.connection.db;
+    let store = new FSBucket(db);
+    store.openDownloadStreamByName(tmpid).
+    pipe(fs.createWriteStream(serverConfig.tmpfileUploadUrl + cuid + '/'+filename)).
+    on('error', function(err) {
+        return cb(new Error(err));
+    }).
+    on('finish', function() {
+        return cb(null,serverConfig.tmpfileUploadUrl + cuid + '/'+filename);
+    });
+}
 //通过文件ID获取文件
 export function getGridFile(id,metadata, cb) {
     let tmpid = new ObjectID(id);
@@ -121,7 +208,7 @@ function putGridFileByPath(path, id, name, options, cb) {
     });
 }
 
-//通过文件ID删除文件
+//通过文件ID删除文件 Deprecated
 export function deleteGridFile(id, cb) {
     let db = mongoose.connection.db;
     let tmpid = new ObjectID(id);
@@ -131,6 +218,19 @@ export function deleteGridFile(id, cb) {
     store.unlink(function(err, result) {
         if (err) {
             return cb(new Error(err));
+        }
+        return cb(null);
+    });
+}
+//通过文件ID,使用GridFSBucket删除文件
+export function deleteGridFS(id,cb){
+    let db = mongoose.connection.db;
+    let tmpid = new ObjectID(id);
+    let store=new FSBucket(db);
+    store.delete(tmpid,(error)=>{
+        if(error)
+        {
+            return cb(new Error(error));
         }
         return cb(null);
     });
